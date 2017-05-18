@@ -2,11 +2,649 @@
   "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
+    "adminUserName": {
+      "type": "string",
+      "minLength": 1,
+      "metadata": {
+        "description": "Username for local administrator account"
+      }
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Password for local administrator account"
+      }
+    },
+    "networkvnetaddressprefix": {
+      "type": "string",
+      "defaultValue": "10.0.0.0/21",
+      "metadata": {
+        "description": "This is the address space used to create your VNET"
+      }
+    },
+    "networkvnetname": {
+      "type": "string",
+      "defaultValue": "az_services_vnet",
+      "metadata": {
+        "description": "This is the name of your VNET"
+      }
+    },
+    "networksubnet1name": {
+      "type": "string",
+      "defaultValue": "az_services_subnet_web",
+      "metadata": {
+        "description": "This is the name of your web tier subnet"
+      }
+    },
+    "networksubnet1prefix": {
+      "type": "string",
+      "defaultValue": "10.0.1.0/24",
+      "metadata": {
+        "description": "This is the CIDR prefix for your web tier subnet"
+      }
+    },
+    "networksubnet1nsgname": {
+      "type": "string",
+      "defaultValue": "az_services_nsg_web",
+      "metadata": {
+        "description": "This is the name of the nsg assigned to the web tier subnet"
+      }
+    },
+    "networksubnet2name": {
+      "type": "string",
+      "defaultValue": "az_services_subnet_apps",
+      "metadata": {
+        "description": "This is the name of your apps subnet"
+      }
+    },
+    "networksubnet2prefix": {
+      "type": "string",
+      "defaultValue": "10.0.2.0/24",
+      "metadata": {
+        "description": "This is the CIDR prefix for your apps subnet"
+      }
+    },
+    "networksubnet2nsgname": {
+      "type": "string",
+      "defaultValue": "az_services_nsg_apps",
+      "metadata": {
+        "description": "This is the name of the nsg assigned to the apps subnet"
+      }
+    },
+    "networksubnet3name": {
+      "type": "string",
+      "defaultValue": "az_services_subnet_data",
+      "metadata": {
+        "description": "This is the name of your data tier subnet"
+      }
+    },
+    "networksubnet3prefix": {
+      "type": "string",
+      "defaultValue": "10.0.3.0/24",
+      "metadata": {
+        "description": "This is the CIDR prefix for your data tier subnet"
+      }
+    },
+    "networksubnet3nsgname": {
+      "type": "string",
+      "defaultValue": "az_services_nsg_data",
+      "metadata": {
+        "description": "This is the name of the nsg assigned to the data tier subnet"
+      }
+    },
+    "networksubnet4name": {
+      "type": "string",
+      "defaultValue": "az_services_subnet_ad",
+      "metadata": {
+        "description": "This is the name of your AD subnet"
+      }
+    },
+    "networksubnet4prefix": {
+      "type": "string",
+      "defaultValue": "10.0.4.0/27",
+      "metadata": {
+        "description": "This is the CIDR prefix for your AD subnet"
+      }
+    },
+    "networksubnet4nsgname": {
+      "type": "string",
+      "defaultValue": "az_services_nsg_ad",
+      "metadata": {
+        "description": "This is the name of the nsg assigned to the AD subnet"
+      }
+    },
+    "networksubnet5name": {
+      "type": "string",
+      "defaultValue": "az_services_subnet_adfs",
+      "metadata": {
+        "description": "This is the name of your ADFS subnet"
+      }
+    },
+    "networksubnet5prefix": {
+      "type": "string",
+      "defaultValue": "10.0.4.32/27",
+      "metadata": {
+        "description": "This is the CIDR prefix for your ADFS subnet"
+      }
+    },
+    "networksubnet5nsgname": {
+      "type": "string",
+      "defaultValue": "az_services_nsg_adfs",
+      "metadata": {
+        "description": "This is the name of the nsg assigned to the ADFS subnet"
+      }
+    },
+    "networksubnet6name": {
+      "type": "string",
+      "defaultValue": "az_services_subnet_adfsdmz",
+      "metadata": {
+        "description": "This is the name of your ADFS DMZ subnet"
+      }
+    },
+    "networksubnet6prefix": {
+      "type": "string",
+      "defaultValue": "10.0.4.128/27",
+      "metadata": {
+        "description": "This is the CIDR prefix for your ADFS DMZ subnet"
+      }
+    },
+    "networksubnet6nsgname": {
+      "type": "string",
+      "defaultValue": "az_services_nsg_adfsdmz",
+      "metadata": {
+        "description": "This is the name of the nsg assigned to the ADFS DMZ subnet"
+      }
+    },
+    "networksubnet7name": {
+      "type": "string",
+      "defaultValue": "az_services_subnet_mgmt",
+      "metadata": {
+        "description": "This is the name of your management subnet"
+      }
+    },
+    "networksubnet7prefix": {
+      "type": "string",
+      "defaultValue": "10.0.0.128/27",
+      "metadata": {
+        "description": "This is the CIDR prefix for your management subnet"
+      }
+    },
+    "networksubnet7nsgname": {
+      "type": "string",
+      "defaultValue": "az_services_nsg_mgmt",
+      "metadata": {
+        "description": "This is the name of the nsg assigned to the management subnet"
+      }
+    },
+    "networkwappip": {
+      "type": "string",
+      "defaultValue": "az_services_pip_adfsdmz",
+      "metadata": {
+        "description": "This is the name of the public IP used for the WAP servers"
+      }
+    },
+    "serverdcfqdn": {
+      "type": "string",
+      "defaultValue": "azads",
+      "metadata": {
+        "description": "This is the base name of your two domain controllers"
+      }
+    },
+    "serverdcavset": {
+      "type": "string",
+      "defaultValue": "az_services_avset_ad",
+      "metadata": {
+        "description": "This is the name of the availability set for your DCs"
+      }
+    },
+    "serverdcfqdnloopcount": {
+      "type": "int",
+      "defaultValue": 2,
+      "metadata": {
+        "description": "This is the number of DCs that will be created via loop"
+      }
+    },
+    "serveradfsfqdn": {
+      "type": "string",
+      "defaultValue": "azadfs",
+      "metadata": {
+        "description": "This is the base name of your two ADFS servers"
+      }
+    },
+    "serveradfsfqdnloopcount": {
+      "type": "int",
+      "defaultValue": 2,
+      "metadata": {
+        "description": "This is the number of ADFS servers that will be created via loop"
+      }
+    },
+    "serveradfsavset": {
+      "type": "string",
+      "defaultValue": "az_services_avset_adfs",
+      "metadata": {
+        "description": "This is the name of the availability set for your ADFS servers"
+      }
+    },
+    "serverwapfqdn": {
+      "type": "string",
+      "defaultValue": "azwap",
+      "metadata": {
+        "description": "This is the base name of your two WAP servers"
+      }
+    },
+    "serverwapfqdnloopcount": {
+      "type": "int",
+      "defaultValue": 2,
+      "metadata": {
+        "description": "This is the number of WAP servers that will be created via loop"
+      }
+    },
+    "serverwapavset": {
+      "type": "string",
+      "defaultValue": "az_services_avset_wap",
+      "metadata": {
+        "description": "This is the name of the availability set for your WAP servers"
+      }
+    },
+    "serverexchfqdn": {
+      "type": "string",
+      "defaultValue": "azexch",
+      "metadata": {
+        "description": "This is the base name of your two Exchange servers"
+      }
+    },
+    "serverexchfqdnloopcount": {
+      "type": "int",
+      "defaultValue": 2,
+      "metadata": {
+        "description": "This is the number of Exchange servers that will be created via loop"
+      }
+    },
+    "serverexchavset": {
+      "type": "string",
+      "defaultValue": "az_services_avset_exch",
+      "metadata": {
+        "description": "This is the name of the availability set for your Exchange servers"
+      }
+    }
   },
   "variables": {
+    "vnetID": "[resourceId('Microsoft.Network/virtualNetworks', parameters('networkvnetname'))]",
+    "networkpublicIPAddressType": "Dynamic",
+    "networkpublicIPAddressName": "[concat(parameters('networksubnet6name'),'_WAP_PIP')]",
+    "networkpublicIPAddressID": "[resourceId('Microsoft.Network/publicIPAddresses',variables('networkpublicIPAddressName'))]",
+    "networksubnet1nsgid": "[resourceID('Microsoft.Network/networkSecurityGroups/',parameters('networksubnet1nsgname'))]",
+    "networksubnet2nsgid": "[resourceID('Microsoft.Network/networkSecurityGroups/',parameters('networksubnet2nsgname'))]",
+    "networksubnet3nsgid": "[resourceID('Microsoft.Network/networkSecurityGroups/',parameters('networksubnet3nsgname'))]",
+    "networksubnet4nsgid": "[resourceID('Microsoft.Network/networkSecurityGroups/',parameters('networksubnet4nsgname'))]",
+    "networksubnet1ref": "[concat(variables('vnetID'), '/subnets/', parameters('networksubnet1name'))]",
+    "networksubnet2ref": "[concat(variables('vnetID'), '/subnets/', parameters('networksubnet2name'))]",
+    "networksubnet3ref": "[concat(variables('vnetID'), '/subnets/', parameters('networksubnet3name'))]",
+    "networksubnet4ref": "[concat(variables('vnetID'), '/subnets/', parameters('networksubnet4name'))]",
+    "storagetype": "Standard_LRS",
+    "storageName": "[concat('identity', uniqueString(resourceGroup().id))]",
+    "serverStorageAccountContainerName": "vhds",
+    "serverdcvmsize": "Standard_A3",
+    "serveradfsvmsize": "Standard_A2",
+    "serverwapvmsize": "Standard_A3",
+    "serverexchangevmsize": "Standard_A5",
+    "serveraadconnectvmsize": "Standard_D3_v2",
+    "serverImagePublisher": "MicrosoftWindowsServer",
+    "serverImageOffer": "WindowsServer",
+    "serverwindowsosversion": "2012-R2-Datacenter",
+    "serverdcnicname": "[concat(parameters('serverdcfqdn'),'nic')]",
+    "serverdcosdiskname": "[concat(parameters('serverdcfqdn'),'OSDisk')]"
   },
   "resources": [
-  ],
-  "outputs": {
-  }
-}
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2015-06-15",
+      "location": "[resourceGroup().location]",
+      "name": "[parameters('networksubnet1nsgname')]",
+      "tags": {
+        "displayName": "NSG1"
+      },
+      "properties": {
+        "securityRules": [
+          {
+            "name": "ADFS_Proxy_deny",
+            "properties": {
+              "description": "All_adfs_proxy.deny",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "[parameters('networksubnet4prefix')]",
+              "destinationAddressPrefix": "*",
+              "access": "Deny",
+              "priority": 101,
+              "direction": "Inbound"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2015-06-15",
+      "location": "[resourceGroup().location]",
+      "name": "[parameters('networksubnet2nsgname')]",
+      "tags": {
+        "displayName": "NSG2"
+      },
+      "properties": {
+        "securityRules": [
+          {
+            "name": "HTTPS_ADFS_Proxy_allow",
+            "properties": {
+              "description": "HTTPS_adfs_proxy.allow",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "443",
+              "sourceAddressPrefix": "[parameters('networksubnet4prefix')]",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 101,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "ADFS_Proxy_deny",
+            "properties": {
+              "description": "All_adfs_proxy.deny",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "[parameters('networksubnet4prefix')]",
+              "destinationAddressPrefix": "*",
+              "access": "Deny",
+              "priority": 102,
+              "direction": "Inbound"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2015-06-15",
+      "location": "[resourceGroup().location]",
+      "name": "[parameters('networksubnet3nsgname')]",
+      "tags": {
+        "displayName": "NSG3"
+      },
+      "properties": {
+        "securityRules": [
+          {
+            "name": "ADFS_Proxy_deny",
+            "properties": {
+              "description": "All_adfs_proxy.deny",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "[parameters('networksubnet4prefix')]",
+              "destinationAddressPrefix": "*",
+              "access": "Deny",
+              "priority": 101,
+              "direction": "Inbound"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2015-06-15",
+      "location": "[resourceGroup().location]",
+      "name": "[parameters('networksubnet4nsgname')]",
+      "tags": {
+        "displayName": "NSG4"
+      },
+      "properties": {
+        "securityRules": [
+          {
+            "name": "HTTPS-Allow",
+            "properties": {
+              "description": "All_Internet.inboud.https.allow",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "443",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 101,
+              "direction": "Inbound"
+            }
+          }
+        ]
+      }
+    },
+
+    {
+      "name": "[parameters('networkvnetname')]",
+      "apiVersion": "2015-06-15",
+      "type": "Microsoft.Network/virtualNetworks",
+      "location": "[resourceGroup().location]",
+      "dependsON": [
+        "[resourceID('Microsoft.Network/networkSecurityGroups/',parameters('networksubnet1nsgname'))]",
+        "[resourceID('Microsoft.Network/networkSecurityGroups/',parameters('networksubnet2nsgname'))]",
+        "[resourceID('Microsoft.Network/networkSecurityGroups/',parameters('networksubnet3nsgname'))]",
+        "[resourceID('Microsoft.Network/networkSecurityGroups/',parameters('networksubnet4nsgname'))]"
+      ],
+      "tags": {
+        "displayName": "Virtual Network"
+      },
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[parameters('networkvnetaddressprefix')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[parameters('networksubnet1Name')]",
+            "properties": {
+              "addressPrefix": "[parameters('networksubnet1prefix')]",
+              "networkSecurityGroup": {
+                "id": "[variables('networksubnet1nsgid')]"
+              }
+            }
+          },
+          {
+            "name": "[parameters('networksubnet2Name')]",
+            "properties": {
+              "addressPrefix": "[parameters('networksubnet2prefix')]",
+              "networkSecurityGroup": {
+                "id": "[variables('networksubnet2nsgid')]"
+              }
+            }
+          },
+          {
+            "name": "[parameters('networksubnet3Name')]",
+            "properties": {
+              "addressPrefix": "[parameters('networksubnet3prefix')]",
+              "networkSecurityGroup": {
+                "id": "[variables('networksubnet3nsgid')]"
+              }
+            }
+          },
+          {
+            "name": "[parameters('networksubnet4Name')]",
+            "properties": {
+              "addressPrefix": "[parameters('networksubnet4prefix')]",
+              "networkSecurityGroup": {
+                "id": "[variables('networksubnet4nsgid')]"
+              }
+            }
+          },
+          {
+            "name": "[parameters('networksubnet5Name')]",
+            "properties": {
+              "addressPrefix": "[parameters('networksubnet5prefix')]"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2015-06-15",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[parameters('networkwappip')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "publicIPAllocationMethod": "[variables('networkpublicIPAddressType')]"
+      },
+      "tags": {
+        "displayName": "Public IP"
+      }
+    },
+    {
+      "name": "[variables('storageName')]",
+      "type": "Microsoft.Storage/storageAccounts",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-06-15",
+      "dependsOn": [],
+      "tags": {
+        "displayName": "Storage Account"
+      },
+      "properties": {
+        "accountType": "[variables('storagetype')]",
+        "Description": "Storage account ot houes the identity components for ADFS"
+      }
+    },
+    {
+      "type": "Microsoft.Compute/availabilitySets",
+      "name": "[parameters('serverdcavset')]",
+      "apiVersion": "2015-06-15",
+      "location": "[resourceGroup().location]",
+      "properties": {},
+      "tags": {
+        "displayName": "Availability Set - DCs"
+      }
+    },
+    {
+      "type": "Microsoft.Compute/availabilitySets",
+      "name": "[parameters('serveradfsavset')]",
+      "apiVersion": "2015-06-15",
+      "location": "[resourceGroup().location]",
+      "properties": {},
+      "tags": {
+        "displayName": "Availability Set - ADFS"
+      }
+    },
+    {
+      "type": "Microsoft.Compute/availabilitySets",
+      "name": "[parameters('serverwapavset')]",
+      "apiVersion": "2015-06-15",
+      "location": "[resourceGroup().location]",
+      "properties": {},
+      "tags": {
+        "displayName": "Availability Set - WAP"
+      }
+    },
+    {
+      "type": "Microsoft.Compute/availabilitySets",
+      "name": "[parameters('serverwapavset')]",
+      "apiVersion": "2015-06-15",
+      "location": "[resourceGroup().location]",
+      "properties": {},
+      "tags": {
+        "displayName": "Availability Set - Exch"
+      }
+    },
+    {
+      "name": "[concat(variables('serverdcnicname'), copyIndex())]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2016-03-30",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('networkvnetname'))]"
+      ],
+      "copy": {
+        "name": "NICCopy",
+        "count": "[parameters('serverdcfqdnloopcount')]"
+      },
+      "tags": {
+        "displayName": "DC NICS",
+        "Workloads": "Identity"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[parameters('networksubnet4name')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "[concat(parameters('serveradfsfqdn'), copyIndex())]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-06-15",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]",
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('serverdcnicname'), copyIndex())]"
+      ],
+      "tags": {
+        "displayName": "DC Servers",
+        "Workloads": "Identity"
+      },
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('serverdcvmsize')]"
+        },
+        "availabilityset": {
+          "id": "[resourceId('Microsoft.Compute/availabilitySets','avset-adds')]"
+        },
+        "osProfile": {
+          "computerName": "[concat(parameters('serverdcfqdn'), copyIndex())]",
+          "adminUsername": "[parameters('adminUserName')]",
+          "adminPassword": "[parameters('adminPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('serverImagePublisher')]",
+            "offer": "[variables('serverImageOffer')]",
+            "sku": "[variables('ServerWindowsOSVersion')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "[concat(variables('serverdcosdiskname'), copyIndex())]",
+            "vhd": {
+              "uri": "[concat(reference(resourceId('Microsoft.Storage/storageAccounts', variables('storageName')), '2016-01-01').primaryEndpoints.blob, variables('serverStorageAccountContainerName'), '/', variables('serverdcosdiskname'), copyIndex(), '.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          },
+          "datadisks": [
+            {
+              "name": "datadisk1",
+              "disksizeGB": "500",
+              "lun": 1,
+              "vhd": {
+                "uri": "[concat(reference(resourceId('Microsoft.Storage/storageAccounts', variables('storageName')), '2016-01-01').primaryEndpoints.blob, variables('serverStorageAccountContainerName'), '/', variables('serverdcosdiskname'), copyIndex(), '-datadisk1', '.vhd')]"
+              },
+              "createoption": "empty"
+            }
+          ]
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('serverdcnicname'), copyIndex())]"
+            }
+          ]
+        }
+      }
+    }
+   ],
+
+    "outputs":
+    {}
+    }
+      
