@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{151D2E53-A2C4-4D7D-83FE-D05416EBD58E}") = "Azure_EP_CA_Deploy", "Azure_EP_CA_Deploy\Azure_EP_CA_Deploy.deployproj", "{C20FB162-A363-4BDE-9C9E-26C243A2953E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C20FB162-A363-4BDE-9C9E-26C243A2953E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C20FB162-A363-4BDE-9C9E-26C243A2953E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C20FB162-A363-4BDE-9C9E-26C243A2953E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C20FB162-A363-4BDE-9C9E-26C243A2953E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
