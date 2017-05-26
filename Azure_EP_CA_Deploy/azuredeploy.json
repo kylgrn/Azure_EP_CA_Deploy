@@ -183,9 +183,23 @@
         "description": "This is the name of the public IP used for the WAP servers"
       }
     },
+    "networklbadfsname": {
+      "type": "string",
+      "defaultValue": "az_services_lb_adfs",
+      "metadata": {
+        "description": "This is the name of the load balancer for the ADFS servers"
+      }
+    },
+    "networklbwapname": {
+      "type": "string",
+      "defaultValue": "az_services_lb_wap",
+      "metadata": {
+        "description": "This is the name of the load balancer for the WAP servers"
+      }
+    },
     "serverdcfqdn": {
       "type": "string",
-      "defaultValue": "azads",
+      "defaultValue": "azadds",
       "metadata": {
         "description": "This is the base name of your two domain controllers"
       }
@@ -266,21 +280,35 @@
       "metadata": {
         "description": "This is the name of the availability set for your Exchange servers"
       }
+    },
+    "serveraadconnectfqdn": {
+      "type": "string",
+      "defaultValue": "azaadcon",
+      "metadata": {
+        "description": "This is the base name for your AAD Connect server"
+      }
     }
   },
   "variables": {
     "vnetID": "[resourceId('Microsoft.Network/virtualNetworks', parameters('networkvnetname'))]",
     "networkpublicIPAddressType": "Dynamic",
-    "networkpublicIPAddressName": "[concat(parameters('networksubnet6name'),'_WAP_PIP')]",
-    "networkpublicIPAddressID": "[resourceId('Microsoft.Network/publicIPAddresses',variables('networkpublicIPAddressName'))]",
+    "networkpublicIPAddressID": "[resourceId('Microsoft.Network/publicIPAddresses',parameters('networkwappip'))]",
     "networksubnet1nsgid": "[resourceID('Microsoft.Network/networkSecurityGroups/',parameters('networksubnet1nsgname'))]",
     "networksubnet2nsgid": "[resourceID('Microsoft.Network/networkSecurityGroups/',parameters('networksubnet2nsgname'))]",
     "networksubnet3nsgid": "[resourceID('Microsoft.Network/networkSecurityGroups/',parameters('networksubnet3nsgname'))]",
     "networksubnet4nsgid": "[resourceID('Microsoft.Network/networkSecurityGroups/',parameters('networksubnet4nsgname'))]",
+    "networksubnet5nsgid": "[resourceID('Microsoft.Network/networkSecurityGroups/',parameters('networksubnet5nsgname'))]",
+    "networksubnet6nsgid": "[resourceID('Microsoft.Network/networkSecurityGroups/',parameters('networksubnet6nsgname'))]",
+    "networksubnet7nsgid": "[resourceID('Microsoft.Network/networkSecurityGroups/',parameters('networksubnet7nsgname'))]",
     "networksubnet1ref": "[concat(variables('vnetID'), '/subnets/', parameters('networksubnet1name'))]",
     "networksubnet2ref": "[concat(variables('vnetID'), '/subnets/', parameters('networksubnet2name'))]",
     "networksubnet3ref": "[concat(variables('vnetID'), '/subnets/', parameters('networksubnet3name'))]",
     "networksubnet4ref": "[concat(variables('vnetID'), '/subnets/', parameters('networksubnet4name'))]",
+    "networksubnet5ref": "[concat(variables('vnetID'), '/subnets/', parameters('networksubnet5name'))]",
+    "networksubnet6ref": "[concat(variables('vnetID'), '/subnets/', parameters('networksubnet6name'))]",
+    "networksubnet7ref": "[concat(variables('vnetID'), '/subnets/', parameters('networksubnet7name'))]",
+    "networklbadfsref": "[resourceId('Microsoft.Network/LoadBalancers',parameters('networklbadfsname'))]",
+    "networklbwapref": "[resourceId('Microsoft.Network/LoadBalancers',parameters('networklbwapname'))]",
     "storagetype": "Standard_LRS",
     "storageName": "[concat('identity', uniqueString(resourceGroup().id))]",
     "serverStorageAccountContainerName": "vhds",
@@ -293,7 +321,15 @@
     "serverImageOffer": "WindowsServer",
     "serverwindowsosversion": "2012-R2-Datacenter",
     "serverdcnicname": "[concat(parameters('serverdcfqdn'),'nic')]",
-    "serverdcosdiskname": "[concat(parameters('serverdcfqdn'),'OSDisk')]"
+    "serverdcosdiskname": "[concat(parameters('serverdcfqdn'),'OSDisk')]",
+    "serveradfsosdiskname": "[concat(parameters('serveradfsfqdn'),'OSDisk')]",
+    "serverwaposdiskname": "[concat(parameters('serverwapfqdn'),'OSDisk')]",
+    "serverexchosdiskname": "[concat(parameters('serverexchfqdn'),'OSDisk')]",
+    "serveraadconnectosdiskname": "[concat(parameters('serveraadconnectfqdn'),'OSDisk')]",
+    "serveradfsnicname": "[concat(parameters('serveradfsfqdn'),'nic')]",
+    "serverwapnicname": "[concat(parameters('serverwapfqdn'),'nic')]",
+    "serverexchnicname": "[concat(parameters('serverexchfqdn'),'nic')]",
+    "serveraadconnectnicname": "[concat(parameters('serveraadconnectfqdn'),'nic')]"
   },
   "resources": [
     {
@@ -302,7 +338,7 @@
       "location": "[resourceGroup().location]",
       "name": "[parameters('networksubnet1nsgname')]",
       "tags": {
-        "displayName": "NSG1"
+        "displayName": "NSG - Web"
       },
       "properties": {
         "securityRules": [
@@ -313,7 +349,7 @@
               "protocol": "*",
               "sourcePortRange": "*",
               "destinationPortRange": "*",
-              "sourceAddressPrefix": "[parameters('networksubnet4prefix')]",
+              "sourceAddressPrefix": "[parameters('networksubnet6prefix')]",
               "destinationAddressPrefix": "*",
               "access": "Deny",
               "priority": 101,
@@ -329,24 +365,10 @@
       "location": "[resourceGroup().location]",
       "name": "[parameters('networksubnet2nsgname')]",
       "tags": {
-        "displayName": "NSG2"
+        "displayName": "NSG - Apps"
       },
       "properties": {
         "securityRules": [
-          {
-            "name": "HTTPS_ADFS_Proxy_allow",
-            "properties": {
-              "description": "HTTPS_adfs_proxy.allow",
-              "protocol": "Tcp",
-              "sourcePortRange": "*",
-              "destinationPortRange": "443",
-              "sourceAddressPrefix": "[parameters('networksubnet4prefix')]",
-              "destinationAddressPrefix": "*",
-              "access": "Allow",
-              "priority": 101,
-              "direction": "Inbound"
-            }
-          },
           {
             "name": "ADFS_Proxy_deny",
             "properties": {
@@ -354,7 +376,7 @@
               "protocol": "*",
               "sourcePortRange": "*",
               "destinationPortRange": "*",
-              "sourceAddressPrefix": "[parameters('networksubnet4prefix')]",
+              "sourceAddressPrefix": "[parameters('networksubnet6prefix')]",
               "destinationAddressPrefix": "*",
               "access": "Deny",
               "priority": 102,
@@ -370,7 +392,7 @@
       "location": "[resourceGroup().location]",
       "name": "[parameters('networksubnet3nsgname')]",
       "tags": {
-        "displayName": "NSG3"
+        "displayName": "NSG - Data"
       },
       "properties": {
         "securityRules": [
@@ -381,7 +403,7 @@
               "protocol": "*",
               "sourcePortRange": "*",
               "destinationPortRange": "*",
-              "sourceAddressPrefix": "[parameters('networksubnet4prefix')]",
+              "sourceAddressPrefix": "[parameters('networksubnet6prefix')]",
               "destinationAddressPrefix": "*",
               "access": "Deny",
               "priority": 101,
@@ -397,7 +419,34 @@
       "location": "[resourceGroup().location]",
       "name": "[parameters('networksubnet4nsgname')]",
       "tags": {
-        "displayName": "NSG4"
+        "displayName": "NSG - AD"
+      },
+      "properties": {
+        "securityRules": [
+          {
+            "name": "ADFS_Proxy_deny",
+            "properties": {
+              "description": "All_adfs_proxy.deny",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "[parameters('networksubnet6prefix')]",
+              "destinationAddressPrefix": "*",
+              "access": "Deny",
+              "priority": 101,
+              "direction": "Inbound"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2015-06-15",
+      "location": "[resourceGroup().location]",
+      "name": "[parameters('networksubnet5nsgname')]",
+      "tags": {
+        "displayName": "NSG - ADFS"
       },
       "properties": {
         "securityRules": [
@@ -408,7 +457,7 @@
               "protocol": "Tcp",
               "sourcePortRange": "*",
               "destinationPortRange": "443",
-              "sourceAddressPrefix": "*",
+              "sourceAddressPrefix": "[parameters('networksubnet6prefix')]",
               "destinationAddressPrefix": "*",
               "access": "Allow",
               "priority": 101,
@@ -418,7 +467,60 @@
         ]
       }
     },
-
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2015-06-15",
+      "location": "[resourceGroup().location]",
+      "name": "[parameters('networksubnet6nsgname')]",
+      "tags": {
+        "displayName": "NSG - ADFSDMZ"
+      },
+      "properties": {
+        "securityRules": [
+          {
+            "name": "HTTPS-Allow",
+            "properties": {
+              "description": "All_Internet.inboud.https.allow",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "443",
+              "sourceAddressPrefix": "Internet",
+              "destinationAddressPrefix": "[parameters('networksubnet6prefix')]",
+              "access": "Allow",
+              "priority": 101,
+              "direction": "Inbound"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2015-06-15",
+      "location": "[resourceGroup().location]",
+      "name": "[parameters('networksubnet7nsgname')]",
+      "tags": {
+        "displayName": "NSG - Mgmt"
+      },
+      "properties": {
+        "securityRules": [
+          {
+            "name": "ADFS_Proxy_deny",
+            "properties": {
+              "description": "All_adfs_proxy.deny",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "[parameters('networksubnet6prefix')]",
+              "destinationAddressPrefix": "*",
+              "access": "Deny",
+              "priority": 101,
+              "direction": "Inbound"
+            }
+          }
+        ]
+      }
+    },
     {
       "name": "[parameters('networkvnetname')]",
       "apiVersion": "2015-06-15",
@@ -428,7 +530,10 @@
         "[resourceID('Microsoft.Network/networkSecurityGroups/',parameters('networksubnet1nsgname'))]",
         "[resourceID('Microsoft.Network/networkSecurityGroups/',parameters('networksubnet2nsgname'))]",
         "[resourceID('Microsoft.Network/networkSecurityGroups/',parameters('networksubnet3nsgname'))]",
-        "[resourceID('Microsoft.Network/networkSecurityGroups/',parameters('networksubnet4nsgname'))]"
+        "[resourceID('Microsoft.Network/networkSecurityGroups/',parameters('networksubnet4nsgname'))]",
+        "[resourceID('Microsoft.Network/networkSecurityGroups/',parameters('networksubnet5nsgname'))]",
+        "[resourceID('Microsoft.Network/networkSecurityGroups/',parameters('networksubnet6nsgname'))]",
+        "[resourceID('Microsoft.Network/networkSecurityGroups/',parameters('networksubnet7nsgname'))]"
       ],
       "tags": {
         "displayName": "Virtual Network"
@@ -479,8 +584,151 @@
           {
             "name": "[parameters('networksubnet5Name')]",
             "properties": {
-              "addressPrefix": "[parameters('networksubnet5prefix')]"
+              "addressPrefix": "[parameters('networksubnet5prefix')]",
+              "networkSecurityGroup": {
+                "id": "[variables('networksubnet5nsgid')]"
+              }
             }
+          },
+          {
+            "name": "[parameters('networksubnet6Name')]",
+            "properties": {
+              "addressPrefix": "[parameters('networksubnet6prefix')]",
+              "networkSecurityGroup": {
+                "id": "[variables('networksubnet6nsgid')]"
+              }
+            }
+          },
+          {
+            "name": "[parameters('networksubnet7Name')]",
+            "properties": {
+              "addressPrefix": "[parameters('networksubnet7prefix')]",
+              "networkSecurityGroup": {
+                "id": "[variables('networksubnet7nsgid')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2015-06-15",
+      "name": "[parameters('networklbadfsname')]",
+      "type": "Microsoft.Network/loadBalancers",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/virtualNetworks/', parameters('networkvnetname'))]"
+      ],
+      "tags": {
+        "displayName": "Load Balancer -ADFS"
+      },
+      "properties": {
+        "frontendIPConfigurations": [
+          {
+            "name": "LoadBalancerFrontEnd",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[variables('networksubnet5ref')]"
+              }
+            }
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "loadBalancerBackEnd"
+          }
+        ],
+        "loadBalancingRules": [
+          {
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('networklbadfsname')), '/frontendIpConfigurations/loadBalancerFrontEnd')]"
+              },
+              "backendAddressPool": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('networklbadfsname')), '/backendAddressPools/loadBalancerBackEnd')]"
+              },
+              "probe": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('networklbadfsname')), '/probes/lbprobe')]"
+              },
+              "protocol": "Tcp",
+              "frontendPort": 443,
+              "backendPort": 443,
+              "idleTimeoutInMinutes": 15
+            },
+            "name": "lbrule"
+          }
+        ],
+        "probes": [
+          {
+            "properties": {
+              "protocol": "Tcp",
+              "port": 443,
+              "intervalInSeconds": 15,
+              "numberOfProbes": 2
+            },
+            "name": "lbprobe"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2015-06-15",
+      "name": "[parameters('networklbwapname')]",
+      "type": "Microsoft.Network/loadBalancers",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/virtualNetworks/', parameters('networkvnetname'))]",
+        "[concat('Microsoft.Network/publicIPAddresses/',parameters('networkwappip'))]"
+      ],
+      "tags": {
+        "displayName": "Load Balancer - WAP"
+      },
+      "properties": {
+        "frontendIPConfigurations": [
+          {
+            "name": "LoadBalancerFrontEnd",
+            "properties": {
+              "publicIPAddress": {
+                "id": "[concat('Microsoft.Network/publicIPAddresses/',parameters('networkwappip'))]"
+              }
+            }
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "loadBalancerBackEnd"
+          }
+        ],
+        "loadBalancingRules": [
+          {
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('networklbwapname')), '/frontendIpConfigurations/loadBalancerFrontEnd')]"
+              },
+              "backendAddressPool": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('networklbwapname')), '/backendAddressPools/loadBalancerBackEnd')]"
+              },
+              "probe": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('networklbwapname')), '/probes/lbprobe')]"
+              },
+              "protocol": "Tcp",
+              "frontendPort": 443,
+              "backendPort": 443,
+              "idleTimeoutInMinutes": 15
+            },
+            "name": "lbrule"
+          }
+        ],
+        "probes": [
+          {
+            "properties": {
+              "protocol": "Tcp",
+              "port": 443,
+              "intervalInSeconds": 15,
+              "numberOfProbes": 2
+            },
+            "name": "lbprobe"
           }
         ]
       }
@@ -543,7 +791,7 @@
     },
     {
       "type": "Microsoft.Compute/availabilitySets",
-      "name": "[parameters('serverwapavset')]",
+      "name": "[parameters('serverexchavset')]",
       "apiVersion": "2015-06-15",
       "location": "[resourceGroup().location]",
       "properties": {},
@@ -557,14 +805,14 @@
       "location": "[resourceGroup().location]",
       "apiVersion": "2016-03-30",
       "dependsOn": [
-        "[resourceId('Microsoft.Network/virtualNetworks', parameters('networkvnetname'))]"
+        "[variables('vnetID')]"
       ],
       "copy": {
-        "name": "NICCopy",
+        "name": "[concat(variables('serverdcnicname'), 'NICCopy')]",
         "count": "[parameters('serverdcfqdnloopcount')]"
       },
       "tags": {
-        "displayName": "DC NICS",
+        "displayName": "NICS - DCs",
         "Workloads": "Identity"
       },
       "properties": {
@@ -574,7 +822,7 @@
             "properties": {
               "privateIPAllocationMethod": "Dynamic",
               "subnet": {
-                "id": "[parameters('networksubnet4name')]"
+                "id": "[concat(variables('vnetID'),'/subnets/',parameters('networksubnet4name'))]"
               }
             }
           }
@@ -582,16 +830,149 @@
       }
     },
     {
-      "name": "[concat(parameters('serveradfsfqdn'), copyIndex())]",
-      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[concat(variables('serveradfsnicname'), copyIndex())]",
+      "type": "Microsoft.Network/networkInterfaces",
       "location": "[resourceGroup().location]",
-      "apiVersion": "2015-06-15",
+      "apiVersion": "2016-03-30",
       "dependsOn": [
-        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]",
-        "[resourceId('Microsoft.Network/networkInterfaces', variables('serverdcnicname'), copyIndex())]"
+        "[variables('vnetID')]",
+        "[variables('networklbadfsref')]"
+      ],
+      "copy": {
+        "name": "[concat(variables('serveradfsnicname'), 'NICCopy')]",
+        "count": "[parameters('serveradfsfqdnloopcount')]"
+      },
+      "tags": {
+        "displayName": "NICS - ADFS",
+        "Workloads": "Identity"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[concat(variables('vnetID'),'/subnets/',parameters('networksubnet5name'))]"
+              },
+              "Loadbalancerbackendaddresspools": [
+                {
+                  "id": "[concat(variables('networklbadfsref'), '/backendAddressPools/','LoadBalancerBackEnd')]"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "[concat(variables('serverwapnicname'), copyIndex())]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2016-03-30",
+      "dependsOn": [
+        "[variables('vnetID')]",
+        "[variables('networklbwapref')]"
+      ],
+      "copy": {
+        "name": "[concat(variables('serverwapnicname'), 'NICCopy')]",
+        "count": "[parameters('serverwapfqdnloopcount')]"
+      },
+      "tags": {
+        "displayName": "NICS - WAP",
+        "Workloads": "Identity"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[concat(variables('vnetID'),'/subnets/',parameters('networksubnet6name'))]"
+              },
+              "Loadbalancerbackendaddresspools": [
+                {
+                  "id": "[concat(variables('networklbwapref'), '/backendAddressPools/','LoadBalancerBackEnd')]"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "[concat(variables('serverexchnicname'), copyIndex())]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2016-03-30",
+      "dependsOn": [
+        "[variables('vnetID')]"
+      ],
+      "copy": {
+        "name": "[concat(variables('serverexchnicname'), 'NICCopy')]",
+        "count": "[parameters('serverwapfqdnloopcount')]"
+      },
+      "tags": {
+        "displayName": "NICS - Exch",
+        "Workloads": "Identity"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[concat(variables('vnetID'),'/subnets/',parameters('networksubnet2name'))]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "[concat(variables('serveraadconnectnicname'))]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2016-03-30",
+      "dependsOn": [
+        "[variables('vnetID')]"
       ],
       "tags": {
-        "displayName": "DC Servers",
+        "displayName": "NICS - AADConnect",
+        "Workloads": "Identity"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[concat(variables('vnetID'),'/subnets/',parameters('networksubnet2name'))]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[concat(parameters('serverdcfqdn'),copyIndex())]",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-06-15",
+      "copy": {
+        "name": "VirtualMachineLoop",
+        "count": "[parameters('serverdcfqdnloopcount')]"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Storage/storageAccounts/', variables('storageName'))]",
+        "[concat('Microsoft.Network/networkInterfaces/', variables('serverdcnicname'),copyIndex())]",
+        "[concat('Microsoft.Compute/availabilitySets/', parameters('serverdcavset'))]"
+      ],
+      "tags": {
+        "displayName": "Servers - DCs",
         "Workloads": "Identity"
       },
       "properties": {
@@ -599,7 +980,7 @@
           "vmSize": "[variables('serverdcvmsize')]"
         },
         "availabilityset": {
-          "id": "[resourceId('Microsoft.Compute/availabilitySets','avset-adds')]"
+          "id": "[resourceId('Microsoft.Compute/availabilitySets', parameters('serverdcavset'))]"
         },
         "osProfile": {
           "computerName": "[concat(parameters('serverdcfqdn'), copyIndex())]",
@@ -616,18 +997,18 @@
           "osDisk": {
             "name": "[concat(variables('serverdcosdiskname'), copyIndex())]",
             "vhd": {
-              "uri": "[concat(reference(resourceId('Microsoft.Storage/storageAccounts', variables('storageName')), '2016-01-01').primaryEndpoints.blob, variables('serverStorageAccountContainerName'), '/', variables('serverdcosdiskname'), copyIndex(), '.vhd')]"
+              "uri": "[concat(reference(resourceId('Microsoft.Storage/storageAccounts', variables('storageName')), '2016-01-01').primaryEndpoints.blob, variables('serverStorageAccountContainerName'), '/', parameters('serverdcfqdn'), copyIndex(), '.vhd')]"
             },
             "caching": "ReadWrite",
             "createOption": "FromImage"
           },
           "datadisks": [
             {
-              "name": "datadisk1",
+              "name": "[concat(parameters('serverdcfqdn'), copyIndex(), 'datadisk1')]",
               "disksizeGB": "500",
               "lun": 1,
               "vhd": {
-                "uri": "[concat(reference(resourceId('Microsoft.Storage/storageAccounts', variables('storageName')), '2016-01-01').primaryEndpoints.blob, variables('serverStorageAccountContainerName'), '/', variables('serverdcosdiskname'), copyIndex(), '-datadisk1', '.vhd')]"
+                "uri": "[concat(reference(resourceId('Microsoft.Storage/storageAccounts', variables('storageName')), '2016-01-01').primaryEndpoints.blob, variables('serverStorageAccountContainerName'), '/', parameters('serverdcfqdn'), copyIndex(), '-datadisk1', '.vhd')]"
               },
               "createoption": "empty"
             }
@@ -636,15 +1017,226 @@
         "networkProfile": {
           "networkInterfaces": [
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('serverdcnicname'), copyIndex())]"
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('serverdcnicname'), copyIndex()))]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[concat(parameters('serveradfsfqdn'),copyIndex())]",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-06-15",
+      "copy": {
+        "name": "VirtualMachineLoop",
+        "count": "[parameters('serveradfsfqdnloopcount')]"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Storage/storageAccounts/', variables('storageName'))]",
+        "[concat('Microsoft.Network/networkInterfaces/', variables('serveradfsnicname'),copyIndex())]",
+        "[concat('Microsoft.Compute/availabilitySets/', parameters('serveradfsavset'))]"
+      ],
+      "tags": {
+        "displayName": "Servers - ADFS",
+        "Workloads": "Identity"
+      },
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('serveradfsvmsize')]"
+        },
+        "availabilityset": {
+          "id": "[resourceId('Microsoft.Compute/availabilitySets', parameters('serveradfsavset'))]"
+        },
+        "osProfile": {
+          "computerName": "[concat(parameters('serveradfsfqdn'), copyIndex())]",
+          "adminUsername": "[parameters('adminUserName')]",
+          "adminPassword": "[parameters('adminPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('serverImagePublisher')]",
+            "offer": "[variables('serverImageOffer')]",
+            "sku": "[variables('ServerWindowsOSVersion')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "[concat(variables('serveradfsosdiskname'), copyIndex())]",
+            "vhd": {
+              "uri": "[concat(reference(resourceId('Microsoft.Storage/storageAccounts', variables('storageName')), '2016-01-01').primaryEndpoints.blob, variables('serverStorageAccountContainerName'), '/', parameters('serveradfsfqdn'), copyIndex(), '.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('serveradfsnicname'), copyIndex()))]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[concat(parameters('serverwapfqdn'),copyIndex())]",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-06-15",
+      "copy": {
+        "name": "VirtualMachineLoop",
+        "count": "[parameters('serveradfsfqdnloopcount')]"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Storage/storageAccounts/', variables('storageName'))]",
+        "[concat('Microsoft.Network/networkInterfaces/', variables('serverwapnicname'),copyIndex())]",
+        "[concat('Microsoft.Compute/availabilitySets/', parameters('serverwapavset'))]"
+      ],
+      "tags": {
+        "displayName": "Servers - WAP",
+        "Workloads": "Identity"
+      },
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('serverwapvmsize')]"
+        },
+        "availabilityset": {
+          "id": "[resourceId('Microsoft.Compute/availabilitySets', parameters('serverwapavset'))]"
+        },
+        "osProfile": {
+          "computerName": "[concat(parameters('serverwapfqdn'), copyIndex())]",
+          "adminUsername": "[parameters('adminUserName')]",
+          "adminPassword": "[parameters('adminPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('serverImagePublisher')]",
+            "offer": "[variables('serverImageOffer')]",
+            "sku": "[variables('ServerWindowsOSVersion')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "[concat(variables('serverwaposdiskname'), copyIndex())]",
+            "vhd": {
+              "uri": "[concat(reference(resourceId('Microsoft.Storage/storageAccounts', variables('storageName')), '2016-01-01').primaryEndpoints.blob, variables('serverStorageAccountContainerName'), '/', parameters('serverwapfqdn'), copyIndex(), '.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('serverwapnicname'), copyIndex()))]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[concat(parameters('serverexchfqdn'),copyIndex())]",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-06-15",
+      "copy": {
+        "name": "VirtualMachineLoop",
+        "count": "[parameters('serverexchfqdnloopcount')]"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Storage/storageAccounts/', variables('storageName'))]",
+        "[concat('Microsoft.Network/networkInterfaces/', variables('serverexchnicname'),copyIndex())]",
+        "[concat('Microsoft.Compute/availabilitySets/', parameters('serverexchavset'))]"
+      ],
+      "tags": {
+        "displayName": "Servers - Exch",
+        "Workloads": "Identity"
+      },
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('serverexchangevmsize')]"
+        },
+        "availabilityset": {
+          "id": "[resourceId('Microsoft.Compute/availabilitySets', parameters('serverexchavset'))]"
+        },
+        "osProfile": {
+          "computerName": "[concat(parameters('serverexchfqdn'), copyIndex())]",
+          "adminUsername": "[parameters('adminUserName')]",
+          "adminPassword": "[parameters('adminPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('serverImagePublisher')]",
+            "offer": "[variables('serverImageOffer')]",
+            "sku": "[variables('ServerWindowsOSVersion')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "[concat(variables('serverexchosdiskname'), copyIndex())]",
+            "vhd": {
+              "uri": "[concat(reference(resourceId('Microsoft.Storage/storageAccounts', variables('storageName')), '2016-01-01').primaryEndpoints.blob, variables('serverStorageAccountContainerName'), '/', parameters('serverexchfqdn'), copyIndex(), '.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('serverexchnicname'), copyIndex()))]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[parameters('serveraadconnectfqdn')]",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-06-15",
+      "dependsOn": [
+        "[concat('Microsoft.Storage/storageAccounts/', variables('storageName'))]",
+        "[concat('Microsoft.Network/networkInterfaces/', variables('serveraadconnectnicname'))]"
+      ],
+      "tags": {
+        "displayName": "Servers - AADConnect",
+        "Workloads": "Identity"
+      },
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('serveraadconnectvmsize')]"
+        },
+        "osProfile": {
+          "computerName": "[concat(parameters('serveraadconnectfqdn'))]",
+          "adminUsername": "[parameters('adminUserName')]",
+          "adminPassword": "[parameters('adminPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('serverImagePublisher')]",
+            "offer": "[variables('serverImageOffer')]",
+            "sku": "[variables('ServerWindowsOSVersion')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "[concat(variables('serveraadconnectosdiskname'))]",
+            "vhd": {
+              "uri": "[concat(reference(resourceId('Microsoft.Storage/storageAccounts', variables('storageName')), '2016-01-01').primaryEndpoints.blob, variables('serverStorageAccountContainerName'), '/', parameters('serveraadconnectfqdn'),'.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('serveraadconnectnicname')))]"
             }
           ]
         }
       }
     }
-   ],
-
+  ],
     "outputs":
-    {}
+    {
     }
-      
+    }
